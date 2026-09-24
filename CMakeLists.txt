@@ -1,27 +1,24 @@
-cmake_minimum_required(VERSION 3.18)
-project(your_package LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.24)
 
-string(REPLACE "-flto=auto" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-string(REPLACE "-flto" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-add_compile_options(-fno-lto)
-add_link_options(-fno-lto)
+# Use the same set of GPU targets on every build host. Override this cache
+# variable when targeting a smaller or different set of GPUs.
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;89;90" CACHE STRING "CUDA architectures to compile for")
+endif()
 
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module NumPy)
+project(frogml LANGUAGES CXX CUDA)
+
+find_package(CUDAToolkit 12.0 REQUIRED)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(_core
+pybind11_add_module(_core NO_EXTRAS
     src/cpp/src/bindings.cpp
     src/cpp/src/addkernel.cu
 )
 
-set_target_properties(_core PROPERTIES
-    INTERPROCEDURAL_OPTIMIZATION OFF
-)
 target_include_directories(_core PRIVATE src/cpp/include)
 
 target_compile_features(_core PRIVATE cxx_std_17)
-set_target_properties(_core PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-target_include_directories(_core PRIVATE ${Python_NumPy_INCLUDE_DIRS})
-
-install(TARGETS _core DESTINATION your_package)
+install(TARGETS _core DESTINATION frogml)

@@ -1,4 +1,3 @@
 .venv/
 .clangd
 build/
-uv.lock

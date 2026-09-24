@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "pybind11"]
+requires = ["scikit-build-core==0.11.6", "pybind11==3.0.1"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -10,4 +10,5 @@ dependencies = ["numpy"]
 
 [tool.scikit-build]
 cmake.build-type = "Release"
+cmake.version = "==3.28.3"
 wheel.packages = ["src/python/frogml"]
