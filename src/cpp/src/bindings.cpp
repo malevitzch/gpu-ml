@@ -10,18 +10,25 @@ void add_scalar_binding(py::array_t<float> arr, float scalar) {
     add_scalar(static_cast<float*>(buf.ptr), scalar, static_cast<int>(buf.size));
 }
 
-float silhouette_binding(py::array_t<int> labels, int label_count, py::array_t<float> distances) {
-
+py::array_t<float> silhouette_samples_binding(py::array_t<int> labels,
+                                                py::array_t<float> distances,
+                                                int cluster_count) {
     auto labelbuf = labels.request();
-    int* labels_ptr = static_cast<int*>(labelbuf.ptr);
     auto distbuf = distances.request();
-    float* distances_ptr = static_cast<float*>(distbuf.ptr);
+    py::array_t<float> scores(labelbuf.size);
+    auto scorebuf = scores.request();
 
-    return silhouette(labels_ptr, distances_ptr, labelbuf.size, label_count);
+    silhouette_samples(static_cast<const int*>(labelbuf.ptr),
+                       static_cast<const float*>(distbuf.ptr),
+                       static_cast<float*>(scorebuf.ptr),
+                       static_cast<std::size_t>(labelbuf.size),
+                       static_cast<std::size_t>(cluster_count));
+    return scores;
 }
 
 PYBIND11_MODULE(_core, m) {
     m.def("add_scalar", &add_scalar_binding, "Add a scalar to a float32 numpy array in-place");
-    m.def("silhouette", &silhouette_binding,
-          "Compute the average silhouette score from labels and pairwise distances");
+    m.def("silhouette_samples", &silhouette_samples_binding,
+          py::arg("labels"), py::arg("distances"), py::arg("cluster_count"),
+          "Compute one silhouette coefficient per sample");
 }
