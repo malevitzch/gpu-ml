@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile commands for clangd")
+
 # Use the same set of GPU targets on every build host. Override this cache
 # variable when targeting a smaller or different set of GPUs.
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -16,6 +18,7 @@ find_package(pybind11 CONFIG REQUIRED)
 pybind11_add_module(_core NO_EXTRAS
     src/cpp/src/bindings.cpp
     src/cpp/src/addkernel.cu
+    src/cpp/src/silhouette.cu
 )
 
 target_include_directories(_core PRIVATE src/cpp/include)
