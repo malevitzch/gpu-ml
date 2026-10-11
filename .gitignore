@@ -1,3 +1,34 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# Virtual environments and packaging artifacts
 .venv/
-.clangd
+venv/
+env/
+.env/
+.eggs/
+*.egg-info/
+dist/
 build/
+wheels/
+
+# Test and coverage output
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Editor and tool state
+.clangd
+.idea/
+.vscode/
+
+# uv resolves dependencies from pyproject.toml; no committed lock is required
+uv.lock

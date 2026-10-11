@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.24)
 # Use the same set of GPU targets on every build host. Override this cache
 # variable when targeting a smaller or different set of GPUs.
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;89;90" CACHE STRING "CUDA architectures to compile for")
+    set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;89;90"
+    CACHE STRING "CUDA architectures to compile for")
 endif()
 
 project(frogml LANGUAGES CXX CUDA)
