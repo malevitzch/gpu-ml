@@ -20,12 +20,22 @@ __global__ void cluster_sizes_atomic_kernel(const int* __restrict__ labels,
 // This is a largely inefficient version, a manual reduction over each row
 // would probably be faster
 __global__ void a_array_atomic_kernel(const int* __restrict__ labels,
-                               float* __restrict__ distances, int* __restrict__ cluster_sizes,
+                               float* __restrict__ distances,
                                float* __restrict__ a, int sample_count) {
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
     if(x < sample_count && y < sample_count) {
         int contrib = (labels[x] == labels[y] && x != y);
         atomicAdd(&a[x], contrib * distances[sample_count * y + x]);
+    }
+}
+
+// This is a small kernel that takes no time since it's O(n) and we do O(n^2) things
+__global__ void normalize_a_kernel(float* __restrict__ a,
+                                   const int* __restrict__ sizes, const int* __restrict__ labels,
+                                   int sample_count) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if(idx < sample_count && sizes[labels[idx]] > 1) {
+        a[idx] /= (sizes[labels[idx]] - 1);
     }
 }
