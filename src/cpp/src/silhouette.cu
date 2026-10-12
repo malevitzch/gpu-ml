@@ -39,3 +39,40 @@ __global__ void normalize_a_kernel(float* __restrict__ a,
         a[idx] /= (sizes[labels[idx]] - 1);
     }
 }
+
+// b computation
+// 1. compute distances from each sample to each cluster.
+// Options:
+//  - Kernel-per-sample
+//  - Kernel-per-cluster (This actually doesn't work too well)
+//  - single kernel per distance (?)
+// 2. compute min across sample, cluster
+
+
+// Those are still not normalized and min is not applied. It will be done in a secondary kernel
+__global__ void b_i_cluster_distances_kernel(const int* __restrict__ labels,
+                           const float* __restrict__ distances,
+                           float* __restrict__ cluster_results,
+                           int i,
+                           int sample_count,
+                           int cluster_count) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int cluster = labels[i];
+    if(idx < sample_count) {
+        if(labels[idx] != cluster) {
+            atomicAdd(&cluster_results[labels[idx]], distances[i * sample_count + idx]);
+        }
+    }
+}
+
+
+// Performance is not too critical there as it's O(C), and there are not too many clusters
+// in any reasonable use case.
+__global__ void normalize_and_agg_kernel(float* __restrict__ cluster_results,
+                                         const int* __restrict__ cluster_sizes, int cluster_count) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if(idx < cluster_count) {
+        cluster_results[idx] /= cluster_sizes[idx];
+        // TODO: reduction
+    }
+}
