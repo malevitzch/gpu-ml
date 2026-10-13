@@ -12,6 +12,16 @@ __global__ void cluster_sizes_atomic_kernel(const int* __restrict__ labels,
     if(idx < sample_count) atomicAdd(&sizes[labels[idx]], 1);
 }
 
+int* get_cluster_sizes(const int* labels, int sample_count, int cluster_count) {
+    int* sizes;
+    cudaMalloc(&sizes, cluster_count * sizeof(int));
+    cudaMemset(sizes, 0, cluster_count * sizeof(int));
+    int block_size = 1024;
+    int grid_size = (sample_count + block_size - 1) / block_size;
+    cluster_sizes_atomic_kernel<<<grid_size, block_size>>>(labels, sizes, sample_count);
+    return sizes;
+}
+
 
 // This is a largely inefficient version, a manual reduction over each row
 // would probably be faster
@@ -102,15 +112,6 @@ float* compute_b_array(const int* labels, const float* distances,
     return cluster_results;
 }
 
-int* get_cluster_sizes(const int* labels, int sample_count, int cluster_count) {
-    int* sizes;
-    cudaMalloc(&sizes, cluster_count * sizeof(int));
-    cudaMemset(sizes, 0, cluster_count * sizeof(int));
-    dim3 block_size = {32, 32};
-    dim3 grid_dim = {(sample_count + block_size.x - 1) / block_size.x, (sample_count + block_size.y - 1) / block_size.y};
-    cluster_sizes_atomic_kernel<<<grid_dim, block_size>>>(labels, sizes, sample_count);
-    return sizes;
-}
 
 __global__ void silhouette_kernel(float* __restrict__ a, const float* __restrict__ b,
                                   float* __restrict__ scores, int sample_count) {
