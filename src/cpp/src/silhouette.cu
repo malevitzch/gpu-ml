@@ -50,8 +50,10 @@ float* compute_a_array(const int* labels, const float* distances, const int* clu
     float* a;
     cudaMalloc(&a, sizeof(int) * sample_count);
     cudaMemset(a, 0, sizeof(int) * sample_count);
-    a_array_atomic_kernel<<<(sample_count + 31) / 32, 32>>>(labels, distances, a, sample_count);
-    normalize_a_kernel<<<(sample_count + 31) / 32, 32>>>(a, cluster_sizes, labels, sample_count);
+    dim3 grid_dim((sample_count + 31) / 32, (sample_count + 31) / 32);
+    dim3 block_dim = {32, 32};
+    a_array_atomic_kernel<<<grid_dim, block_dim>>>(labels, distances, a, sample_count);
+    normalize_a_kernel<<<(sample_count + 1023) / 1024, 1024>>>(a, cluster_sizes, labels, sample_count);
     return a;
 }
 
