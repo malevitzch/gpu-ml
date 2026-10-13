@@ -109,8 +109,10 @@ float* compute_b_array(const int* labels, const float* distances,
     float* cluster_results;
     cudaMalloc(&cluster_results, sizeof(float) * sample_count * cluster_count);
     cudaMemset(cluster_results, 0, sizeof(float) * sample_count * cluster_count);
+    float* b;
+    cudaMalloc(&b, sizeof(float) * sample_count);
     cluster_distances_kernel<<<grid_dim, block_size>>>(labels, distances, cluster_results, sample_count, cluster_count);
-    b_kernel<<<(sample_count + 1023) / 1024, 1024>>>(labels, cluster_results, cluster_sizes, cluster_results, sample_count, cluster_count);
+    b_kernel<<<(sample_count + 1023) / 1024, 1024>>>(labels, cluster_results, cluster_sizes, b, sample_count, cluster_count);
     return cluster_results;
 }
 
