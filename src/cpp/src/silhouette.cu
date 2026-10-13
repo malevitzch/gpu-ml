@@ -113,7 +113,7 @@ float* compute_b_array(const int* labels, const float* distances,
     cudaMalloc(&b, sizeof(float) * sample_count);
     cluster_distances_kernel<<<grid_dim, block_size>>>(labels, distances, cluster_results, sample_count, cluster_count);
     b_kernel<<<(sample_count + 1023) / 1024, 1024>>>(labels, cluster_results, cluster_sizes, b, sample_count, cluster_count);
-    return cluster_results;
+    return b;
 }
 
 
@@ -123,15 +123,27 @@ __global__ void silhouette_kernel(float* __restrict__ a, const float* __restrict
     if(idx < sample_count) {
         float ai = a[idx];
         float bi = b[idx];
-        scores[idx] = (bi - ai) / max(ai, bi);
+        if(max(ai, bi) == 0.0f) {
+            scores[idx] = 0.0f;
+        } else {
+            scores[idx] = (bi - ai) / max(ai, bi);
+        }
     }
 }
 
 void silhouette_samples(const int* labels, const float* distances, float* scores,
                         int sample_count, int cluster_count) {
-    int* cluster_sizes = get_cluster_sizes(labels, sample_count, cluster_count);
-    float* a = compute_a_array(labels, distances, cluster_sizes, sample_count);
-    float* b = compute_b_array(labels, distances, cluster_sizes, sample_count, cluster_count);
+    int* device_labels;
+    float* device_distances;
+    cudaMalloc(&device_labels, sizeof(int) * sample_count);
+    cudaMalloc(&device_distances, sizeof(float) * sample_count * sample_count);
+    cudaMemcpy(device_labels, labels, sizeof(int) * sample_count, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_distances, distances,
+               sizeof(float) * sample_count * sample_count, cudaMemcpyHostToDevice);
+
+    int* cluster_sizes = get_cluster_sizes(device_labels, sample_count, cluster_count);
+    float* a = compute_a_array(device_labels, device_distances, cluster_sizes, sample_count);
+    float* b = compute_b_array(device_labels, device_distances, cluster_sizes, sample_count, cluster_count);
     float* device_scores;
     cudaMalloc(&device_scores, sizeof(float) * sample_count);
     silhouette_kernel<<<(sample_count + 1023) / 1024, 1024>>>(a, b, device_scores, sample_count);
@@ -140,4 +152,6 @@ void silhouette_samples(const int* labels, const float* distances, float* scores
     cudaFree(a);
     cudaFree(b);
     cudaFree(cluster_sizes);
+    cudaFree(device_distances);
+    cudaFree(device_labels);
 }
