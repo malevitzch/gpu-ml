@@ -1,5 +1,4 @@
-#include <cstddef>
-#include <cuda_runtime.h>
+#pragma once
 
 void silhouette_samples(const int* labels, const float* distances, float* scores,
-                        std::size_t sample_count, std::size_t cluster_count);
+                        int sample_count, int cluster_count);

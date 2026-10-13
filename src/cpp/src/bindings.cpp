@@ -21,8 +21,7 @@ py::array_t<float> silhouette_samples_binding(py::array_t<int> labels,
     silhouette_samples(static_cast<const int*>(labelbuf.ptr),
                        static_cast<const float*>(distbuf.ptr),
                        static_cast<float*>(scorebuf.ptr),
-                       static_cast<std::size_t>(labelbuf.size),
-                       static_cast<std::size_t>(cluster_count));
+                       static_cast<int>(labelbuf.size), cluster_count);
     return scores;
 }
 
