@@ -10,6 +10,7 @@ dependencies = ["numpy"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+benchmark = ["scikit-learn>=1.6"]
 
 [tool.scikit-build]
 cmake.build-type = "Release"

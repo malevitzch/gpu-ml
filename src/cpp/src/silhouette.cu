@@ -57,16 +57,6 @@ float* compute_a_array(const int* labels, const float* distances, const int* clu
     return a;
 }
 
-// b computation
-// 1. compute distances from each sample to each cluster.
-// Options:
-//  - a) generate samples x clusters array of distances (not a lot of clusters)
-//  - b) Kernel-per-sample
-//  - c) Kernel-per-cluster (This actually doesn't work too well)
-//  - single kernel per distance (?)
-// 2. compute min across sample, cluster
-
-
 // Assumes cluster_results is zeroed out before calling
 __global__ void cluster_distances_kernel(const int* __restrict__ labels,
                                          const float* __restrict__ distances,
