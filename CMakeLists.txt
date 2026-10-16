@@ -17,7 +17,6 @@ find_package(pybind11 CONFIG REQUIRED)
 
 pybind11_add_module(_core NO_EXTRAS
     src/cpp/src/bindings.cpp
-    src/cpp/src/addkernel.cu
     src/cpp/src/silhouette.cu
 )
 
