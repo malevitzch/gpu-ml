@@ -18,6 +18,7 @@ find_package(pybind11 CONFIG REQUIRED)
 pybind11_add_module(_core NO_EXTRAS
     src/cpp/src/bindings.cpp
     src/cpp/src/silhouette.cu
+    src/cpp/src/silhouette_bench.cu
 )
 
 target_include_directories(_core PRIVATE src/cpp/include)

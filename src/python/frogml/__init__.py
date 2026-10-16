@@ -1,5 +1,5 @@
 """Python interface for the FrogML CUDA extension."""
 
-from ._core import silhouette_samples
+from ._core import silhouette_samples, silhouette_samples_bench
 
-__all__ = ["silhouette_samples"]
+__all__ = ["silhouette_samples", "silhouette_samples_bench"]
