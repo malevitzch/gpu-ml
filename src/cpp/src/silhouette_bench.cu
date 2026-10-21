@@ -1,6 +1,9 @@
-#include <cuda_runtime.h>
-#include <math_constants.h>
+// Compile the production implementation into this translation unit so the
+// benchmark-only launch wrappers below use its exact kernel definitions.
+#include "silhouette.cu"
 #include "silhouette_bench.cuh"
+
+namespace {
 
 class KernelEventRecorder {
 public:
@@ -31,80 +34,6 @@ private:
     int count_ = 0;
 };
 
-__global__ void cluster_sizes_atomic_kernel_bench(const int* __restrict__ labels,
-                                                   int* __restrict__ sizes,
-                                                   int sample_count) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < sample_count) atomicAdd(&sizes[labels[idx]], 1);
-}
-
-__global__ void a_array_atomic_kernel_bench(const int* __restrict__ labels,
-                                             const float* __restrict__ distances,
-                                             float* __restrict__ a,
-                                             int sample_count) {
-    int x = threadIdx.x + blockIdx.x * blockDim.x;
-    int y = threadIdx.y + blockIdx.y * blockDim.y;
-    if (x < sample_count && y < sample_count) {
-        int contributes = labels[x] == labels[y] && x != y;
-        atomicAdd(&a[x], contributes * distances[sample_count * y + x]);
-    }
-}
-
-__global__ void normalize_a_kernel_bench(float* __restrict__ a,
-                                          const int* __restrict__ sizes,
-                                          const int* __restrict__ labels,
-                                          int sample_count) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < sample_count && sizes[labels[idx]] > 1) {
-        a[idx] /= sizes[labels[idx]] - 1;
-    }
-}
-
-__global__ void cluster_distances_kernel_bench(const int* __restrict__ labels,
-                                                const float* __restrict__ distances,
-                                                float* __restrict__ result,
-                                                int sample_count,
-                                                int cluster_count) {
-    int x = threadIdx.x + blockIdx.x * blockDim.x;
-    int y = threadIdx.y + blockIdx.y * blockDim.y;
-    if (x < sample_count && y < sample_count && labels[x] != labels[y]) {
-        atomicAdd(&result[x * cluster_count + labels[y]], distances[sample_count * y + x]);
-    }
-}
-
-__global__ void b_kernel_bench(const int* __restrict__ labels,
-                               const float* __restrict__ cluster_distances,
-                               const int* __restrict__ cluster_sizes,
-                               float* __restrict__ b,
-                               int sample_count,
-                               int cluster_count) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < sample_count) {
-        int label = labels[idx];
-        float result = CUDART_INF_F;
-        for (int i = 0; i < cluster_count; ++i) {
-            if (i != label) {
-                result = min(result,
-                             cluster_distances[idx * cluster_count + i] / cluster_sizes[i]);
-            }
-        }
-        b[idx] = result;
-    }
-}
-
-__global__ void silhouette_kernel_bench(const float* __restrict__ a,
-                                         const float* __restrict__ b,
-                                         float* __restrict__ scores,
-                                         int sample_count) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx < sample_count) {
-        float ai = a[idx];
-        float bi = b[idx];
-        float denominator = max(ai, bi);
-        scores[idx] = denominator == 0.0f ? 0.0f : (bi - ai) / denominator;
-    }
-}
-
 int* get_cluster_sizes_bench(const int* labels, int sample_count, int cluster_count,
                              KernelEventRecorder& events) {
     int* sizes;
@@ -113,7 +42,7 @@ int* get_cluster_sizes_bench(const int* labels, int sample_count, int cluster_co
     int block_size = 1024;
     int grid_size = (sample_count + block_size - 1) / block_size;
     int event = events.start();
-    cluster_sizes_atomic_kernel_bench<<<grid_size, block_size>>>(labels, sizes, sample_count);
+    cluster_sizes_atomic_kernel<<<grid_size, block_size>>>(labels, sizes, sample_count);
     events.stop(event);
     return sizes;
 }
@@ -127,10 +56,10 @@ float* compute_a_array_bench(const int* labels, const float* distances,
     dim3 grid_dim((sample_count + 31) / 32, (sample_count + 31) / 32);
     dim3 block_dim(32, 32);
     int event = events.start();
-    a_array_atomic_kernel_bench<<<grid_dim, block_dim>>>(labels, distances, a, sample_count);
+    a_array_atomic_kernel<<<grid_dim, block_dim>>>(labels, distances, a, sample_count);
     events.stop(event);
     event = events.start();
-    normalize_a_kernel_bench<<<(sample_count + 1023) / 1024, 1024>>>(
+    normalize_a_kernel<<<(sample_count + 1023) / 1024, 1024>>>(
         a, cluster_sizes, labels, sample_count);
     events.stop(event);
     return a;
@@ -148,15 +77,17 @@ float* compute_b_array_bench(const int* labels, const float* distances,
     float* b;
     cudaMalloc(&b, sizeof(float) * sample_count);
     int event = events.start();
-    cluster_distances_kernel_bench<<<grid_dim, block_size>>>(
+    cluster_distances_kernel<<<grid_dim, block_size>>>(
         labels, distances, cluster_results, sample_count, cluster_count);
     events.stop(event);
     event = events.start();
-    b_kernel_bench<<<(sample_count + 1023) / 1024, 1024>>>(
+    b_kernel<<<(sample_count + 1023) / 1024, 1024>>>(
         labels, cluster_results, cluster_sizes, b, sample_count, cluster_count);
     events.stop(event);
     return b;
 }
+
+}  // namespace
 
 void silhouette_samples_bench(const int* labels, const float* distances, float* scores,
                               int sample_count, int cluster_count, float* kernel_times_ms) {
@@ -178,8 +109,8 @@ void silhouette_samples_bench(const int* labels, const float* distances, float* 
     float* device_scores;
     cudaMalloc(&device_scores, sizeof(float) * sample_count);
     int event = events.start();
-    silhouette_kernel_bench<<<(sample_count + 1023) / 1024, 1024>>>(
-        a, b, device_scores, sample_count);
+    silhouette_kernel<<<(sample_count + 1023) / 1024, 1024>>>(a, b, device_scores,
+                                                             sample_count);
     events.stop(event);
     cudaMemcpy(scores, device_scores, sizeof(float) * sample_count, cudaMemcpyDeviceToHost);
     events.collect(kernel_times_ms);

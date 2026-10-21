@@ -43,7 +43,7 @@ After changing C++/CUDA sources or CMake configuration, explicitly reinstall
 FrogML to rebuild the native extension before testing:
 
 ```sh
-uv sync --extra dev --reinstall-package frogml
+uv sync --extra benchmark --reinstall-package frogml
 uv run pytest
 ```
 
