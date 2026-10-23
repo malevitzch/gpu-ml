@@ -51,6 +51,42 @@ py::tuple silhouette_samples_bench_binding(py::array_t<int> labels,
     return py::make_tuple(scores, timings);
 }
 
+py::dict silhouette_samples_bench_configurations_binding(py::array_t<int> labels,
+                                                         py::array_t<float> distances,
+                                                         int cluster_count) {
+    auto labelbuf = labels.request();
+    auto distbuf = distances.request();
+    py::dict configurations;
+
+    const char* kernel_names[] = {
+        "cluster_sizes_atomic_kernel", "a_array_atomic_kernel", "normalize_a_kernel",
+        "cluster_distances_kernel", "b_kernel", "silhouette_kernel",
+    };
+    for (int configuration = 0;
+         configuration < silhouette_benchmark_configuration_count; ++configuration) {
+        py::array_t<float> scores(labelbuf.size);
+        py::array_t<float> kernel_times(silhouette_kernel_count);
+        auto scorebuf = scores.request();
+        auto timingsbuf = kernel_times.request();
+        silhouette_samples_bench_configuration(
+            configuration, static_cast<const int*>(labelbuf.ptr),
+            static_cast<const float*>(distbuf.ptr), static_cast<float*>(scorebuf.ptr),
+            static_cast<int>(labelbuf.size), cluster_count,
+            static_cast<float*>(timingsbuf.ptr));
+
+        py::dict timings;
+        const float* timing_values = static_cast<const float*>(timingsbuf.ptr);
+        for (int kernel = 0; kernel < silhouette_kernel_count; ++kernel) {
+            timings[py::str(kernel_names[kernel])] = timing_values[kernel];
+        }
+        py::dict result;
+        result["scores"] = scores;
+        result["kernel_times"] = timings;
+        configurations[py::str(silhouette_benchmark_configuration_name(configuration))] = result;
+    }
+    return configurations;
+}
+
 PYBIND11_MODULE(_core, m) {
     m.def("silhouette_samples", &silhouette_samples_binding,
           py::arg("labels"), py::arg("distances"), py::arg("cluster_count"),
@@ -58,4 +94,8 @@ PYBIND11_MODULE(_core, m) {
     m.def("silhouette_samples_bench", &silhouette_samples_bench_binding,
           py::arg("labels"), py::arg("distances"), py::arg("cluster_count"),
           "Return scores and per-kernel CUDA event timings in milliseconds");
+    m.def("silhouette_samples_bench_configurations",
+          &silhouette_samples_bench_configurations_binding,
+          py::arg("labels"), py::arg("distances"), py::arg("cluster_count"),
+          "Return scores and per-kernel timings for every compiled benchmark configuration");
 }

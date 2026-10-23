@@ -192,4 +192,3 @@ void silhouette_samples(const int* labels, const float* distances, float* scores
     cudaFree(device_labels);
 }
 
-
