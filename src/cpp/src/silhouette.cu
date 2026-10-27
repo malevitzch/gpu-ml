@@ -70,10 +70,11 @@ __global__ void cluster_distances_kernel(const int* __restrict__ labels,
 
     // This should avoid warp divergence
     if(threadIdx.y == 0) {
-        labels_y[threadIdx.x] = labels[y + threadIdx.x];
+        int index = blockIdx.y * blockDim.y + threadIdx.x;
+        labels_y[threadIdx.x] = index < sample_count ? labels[index] : 0;
     }
     if(threadIdx.y == 31) {
-        labels_x[threadIdx.x] = labels[x];
+        labels_x[threadIdx.x] = x < sample_count ? labels[x] : 0;
     }
 
     __syncthreads();

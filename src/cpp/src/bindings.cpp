@@ -63,7 +63,7 @@ py::dict silhouette_samples_bench_configurations_binding(py::array_t<int> labels
         "cluster_distances_kernel", "b_kernel", "silhouette_kernel",
     };
     for (int configuration = 0;
-         configuration < silhouette_benchmark_configuration_count; ++configuration) {
+         configuration < silhouette_benchmark_configuration_count(); ++configuration) {
         py::array_t<float> scores(labelbuf.size);
         py::array_t<float> kernel_times(silhouette_kernel_count);
         auto scorebuf = scores.request();

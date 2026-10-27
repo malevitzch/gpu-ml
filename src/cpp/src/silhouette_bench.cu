@@ -109,6 +109,9 @@ struct SilhouetteLaunch {
     }
 };
 
+// Experimental kernels and their launch policies live separately from production.
+#include "silhouette_experiments.cuh"
+
 template <typename ClusterSizesLaunch, typename AArrayLaunch, typename NormalizeLaunch,
           typename ClusterDistancesLaunch, typename BLaunch, typename ScoreLaunch>
 struct SilhouetteBenchmarkConfiguration {
@@ -172,13 +175,16 @@ struct AArrayTile16Configuration : SilhouetteBenchmarkConfiguration<
     static constexpr const char* name = "a_tile_16";
 };
 
+struct AArrayRowConfiguration : SilhouetteBenchmarkConfiguration<
+    ClusterSizesAtomicLaunch, AArrayRowLaunch, NormalizeALaunch,
+    ClusterDistancesAtomicLaunch, BArrayLaunch, SilhouetteLaunch> {
+    static constexpr const char* name = "a_row";
+};
+
 // Add future fully-instantiated launch configurations here. This is the single
 // compile-time registry consumed by the Python configuration benchmark.
-using BenchmarkConfigurations = std::tuple<BaselineConfiguration, AArrayTile16Configuration>;
-
-static_assert(std::tuple_size<BenchmarkConfigurations>::value ==
-                  silhouette_benchmark_configuration_count,
-              "Update silhouette_benchmark_configuration_count for the registry");
+using BenchmarkConfigurations = std::tuple<BaselineConfiguration, AArrayTile16Configuration,
+                                           AArrayRowConfiguration>;
 
 template <std::size_t Index = 0>
 const char* configuration_name(int configuration_index) {
@@ -216,6 +222,10 @@ void silhouette_samples_bench(const int* labels, const float* distances, float* 
 
 const char* silhouette_benchmark_configuration_name(int configuration_index) {
     return configuration_name(configuration_index);
+}
+
+int silhouette_benchmark_configuration_count() {
+    return static_cast<int>(std::tuple_size<BenchmarkConfigurations>::value);
 }
 
 void silhouette_samples_bench_configuration(int configuration_index, const int* labels,
