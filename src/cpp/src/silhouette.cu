@@ -120,7 +120,6 @@ __global__ void shmem_cluster_distances_kernel(const int* __restrict__ labels,
 
 auto shmem_cluster_distances = shmem_cluster_distances_kernel<32>;
 
-// TODO: move cluster_sizes to shared memory? This should avoid unnecessary loads
 __global__ void b_kernel(const int* __restrict__  labels,
                          const float* __restrict__ cdists,
                          const int* __restrict__ cluster_sizes,
