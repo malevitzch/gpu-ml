@@ -83,17 +83,16 @@ change automatically when production kernels change.
 
 To try a new kernel alongside the existing one:
 
-1. Add the kernel and a launch policy to
-   `src/cpp/src/silhouette_experiments.cuh`. The `AArrayRowLaunch` example
-   shows how to record a launch with CUDA events. Match the corresponding
-   baseline policy's arguments and output contract; for example, the A stage
-   produces unnormalized sums and is followed by normalization.
+1. Add the kernel and a launch policy, using the policies in
+   `src/cpp/src/silhouette_editable.cuh` as examples of recording CUDA events.
+   Match the corresponding baseline policy's arguments and output contract;
+   for example, the A stage produces unnormalized sums and is followed by
+   normalization.
 2. In `src/cpp/src/silhouette_bench.cu`, define a configuration using
    `SilhouetteBenchmarkConfiguration` and replace the desired launch policy.
    Give it a unique `name` and add it to `BenchmarkConfigurations`.
 3. Rebuild the extension and rerun the command above. The production path
    remains unchanged until you choose to promote an experiment.
 
-The `a_row` example trades atomic additions for a per-sample loop; its speed
-depends on the workload and GPU. Score comparisons use a tolerance because
-floating-point accumulation order can differ between kernels.
+Score comparisons use a tolerance because floating-point accumulation order
+can differ between kernels.

@@ -83,8 +83,6 @@ struct SilhouetteLaunch {
     }
 };
 
-// Experimental kernels and their launch policies live separately from production.
-#include "silhouette_experiments.cuh"
 
 template <typename ClusterSizesLaunch, typename AArrayLaunch, typename NormalizeLaunch,
           typename ClusterDistancesLaunch, typename BLaunch, typename ScoreLaunch>
@@ -143,17 +141,6 @@ struct BaselineConfiguration : SilhouetteBenchmarkConfiguration<
     static constexpr const char* name = "baseline_a_tile_32";
 };
 
-struct AArrayTile16Configuration : SilhouetteBenchmarkConfiguration<
-    ClusterSizesAtomicLaunch, AArrayAtomicLaunch<16>, NormalizeALaunch,
-    ClusterDistancesAtomicLaunch, BArrayLaunch, SilhouetteLaunch> {
-    static constexpr const char* name = "a_tile_16";
-};
-
-struct AArrayRowConfiguration : SilhouetteBenchmarkConfiguration<
-    ClusterSizesAtomicLaunch, AArrayRowLaunch, NormalizeALaunch,
-    ClusterDistancesAtomicLaunch, BArrayLaunch, SilhouetteLaunch> {
-    static constexpr const char* name = "a_row";
-};
 
 struct EditableConfiguration : SilhouetteBenchmarkConfiguration<
     EditableClusterSizesLaunch, EditableAArrayLaunch, EditableNormalizeALaunch,
@@ -163,8 +150,7 @@ struct EditableConfiguration : SilhouetteBenchmarkConfiguration<
 
 // Add future fully-instantiated launch configurations here. This is the single
 // compile-time registry consumed by the Python configuration benchmark.
-using BenchmarkConfigurations = std::tuple<BaselineConfiguration, AArrayTile16Configuration,
-                                           AArrayRowConfiguration, EditableConfiguration>;
+using BenchmarkConfigurations = std::tuple<BaselineConfiguration, EditableConfiguration>;
 
 template <std::size_t Index = 0>
 const char* configuration_name(int configuration_index) {
