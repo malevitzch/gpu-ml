@@ -2,39 +2,13 @@
 // benchmark-only launch wrappers below use its exact kernel definitions.
 #include "silhouette.cu"
 #include "silhouette_bench.cuh"
+#include "kernel_event_recorder.cuh"
+#include "silhouette_editable.cuh"
 
 #include <tuple>
 
 namespace {
 
-class KernelEventRecorder {
-public:
-    int start() {
-        int index = count_++;
-        cudaEventCreate(&starts_[index]);
-        cudaEventCreate(&stops_[index]);
-        cudaEventRecord(starts_[index]);
-        return index;
-    }
-
-    void stop(int index) {
-        cudaEventRecord(stops_[index]);
-    }
-
-    void collect(float* elapsed_ms) {
-        cudaDeviceSynchronize();
-        for (int i = 0; i < count_; ++i) {
-            cudaEventElapsedTime(&elapsed_ms[i], starts_[i], stops_[i]);
-            cudaEventDestroy(starts_[i]);
-            cudaEventDestroy(stops_[i]);
-        }
-    }
-
-private:
-    cudaEvent_t starts_[silhouette_kernel_count];
-    cudaEvent_t stops_[silhouette_kernel_count];
-    int count_ = 0;
-};
 
 // Each launch policy is intentionally a type rather than a runtime function
 // pointer: a benchmark configuration is fully selected at compile time.
@@ -181,10 +155,16 @@ struct AArrayRowConfiguration : SilhouetteBenchmarkConfiguration<
     static constexpr const char* name = "a_row";
 };
 
+struct EditableConfiguration : SilhouetteBenchmarkConfiguration<
+    EditableClusterSizesLaunch, EditableAArrayLaunch, EditableNormalizeALaunch,
+    EditableClusterDistancesLaunch, EditableBArrayLaunch, EditableSilhouetteLaunch> {
+    static constexpr const char* name = "editable";
+};
+
 // Add future fully-instantiated launch configurations here. This is the single
 // compile-time registry consumed by the Python configuration benchmark.
 using BenchmarkConfigurations = std::tuple<BaselineConfiguration, AArrayTile16Configuration,
-                                           AArrayRowConfiguration>;
+                                           AArrayRowConfiguration, EditableConfiguration>;
 
 template <std::size_t Index = 0>
 const char* configuration_name(int configuration_index) {

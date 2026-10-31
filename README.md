@@ -73,6 +73,14 @@ runs and summary to `build/silhouette-configuration-timings.json`; use
 Totals include kernel launches only, not allocation or data transfer. Timings for
 all configurations use the same stage names, even when their kernels differ.
 
+The `editable` configuration uses independent copies of all six production
+kernels and their launch policies in `src/cpp/src/silhouette_editable.cuh`.
+Edit those copies, rebuild the extension, and rerun the benchmark to compare
+against `baseline_a_tile_32`. Keep the stage argument and output contracts
+compatible with the shared benchmark pipeline; it initializes the same buffers
+and records one timing per stage for every configuration. The copies do not
+change automatically when production kernels change.
+
 To try a new kernel alongside the existing one:
 
 1. Add the kernel and a launch policy to
