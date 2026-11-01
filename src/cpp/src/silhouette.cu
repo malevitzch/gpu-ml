@@ -86,39 +86,6 @@ __global__ void cluster_distances_kernel(const int* __restrict__ labels,
     }
 }
 
-// Assumes cluster_results is zeroed out before calling
-template<int MAX_CLUSTERS>
-__global__ void shmem_cluster_distances_kernel(const int* __restrict__ labels,
-                                         const float* __restrict__ distances,
-                                         float* __restrict__ result,
-                                         int sample_count,
-                                         int cluster_count) {
-    // The +1 is here to avoid bank conflicts since max_clusters will be instantiated with powers of 2
-    __shared__ float shmem_distances[MAX_CLUSTERS][MAX_CLUSTERS + 1];
-    int x = threadIdx.x + blockIdx.x * blockDim.x;
-    int y = threadIdx.y + blockIdx.y * blockDim.y;
-
-    if(threadIdx.x < cluster_count && threadIdx.y < cluster_count) {
-        shmem_distances[threadIdx.x][threadIdx.y] = 0.0f;
-    }
-
-    __syncthreads();
-
-    if(x < sample_count && y < sample_count) {
-        if(labels[x] != labels[y]) {
-            atomicAdd(&result[x * cluster_count + labels[y]], distances[sample_count * y + x]);
-        }
-    }
-
-    __syncthreads();
-
-    if(threadIdx.x < cluster_count && threadIdx.y < cluster_count) {
-        atomicAdd(&result[0], shmem_distances[threadIdx.x][threadIdx.y]);
-    }
-}
-
-
-auto shmem_cluster_distances = shmem_cluster_distances_kernel<32>;
 
 __global__ void b_kernel(const int* __restrict__  labels,
                          const float* __restrict__ cdists,

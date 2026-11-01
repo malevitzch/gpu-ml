@@ -36,20 +36,14 @@ If you use `uv`, the equivalent initial setup is:
 
 ```sh
 uv sync --extra dev
-uv run pytest
 ```
 
 After changing C++/CUDA sources or CMake configuration, explicitly reinstall
-FrogML to rebuild the native extension before testing:
+FrogML, otherwise kernels don't update:
 
 ```sh
 uv sync --extra benchmark --reinstall-package frogml
-uv run pytest
 ```
-
-A plain `uv sync` may leave an already-installed editable extension untouched.
-A committed `uv.lock` is not required; `uv` resolves dependencies from
-`pyproject.toml` when setting up the environment.
 
 Build a wheel with either `uv build --wheel` or `python -m pip wheel . --no-deps`.
 

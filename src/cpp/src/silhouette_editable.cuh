@@ -41,24 +41,12 @@ __global__ void editable_cluster_distances_kernel(const int* __restrict__ labels
                                                    float* __restrict__ result,
                                                    int sample_count,
                                                    int cluster_count) {
-    __shared__ int labels_x[32];
-    __shared__ int labels_y[32];
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
 
-    if(threadIdx.y == 0) {
-        int index = blockIdx.y * blockDim.y + threadIdx.x;
-        labels_y[threadIdx.x] = index < sample_count ? labels[index] : 0;
-    }
-    if(threadIdx.y == 31) {
-        labels_x[threadIdx.x] = x < sample_count ? labels[x] : 0;
-    }
-
-    __syncthreads();
-
     if(x < sample_count && y < sample_count) {
-        if(labels_x[threadIdx.x] != labels_y[threadIdx.y]) {
-            atomicAdd(&result[x * cluster_count + labels_y[threadIdx.y]], distances[sample_count * y + x]);
+        if(labels[x] != labels[y]) {
+            atomicAdd(&result[x * cluster_count + labels[y]], distances[sample_count * y + x]);
         }
     }
 }
