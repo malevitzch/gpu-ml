@@ -16,23 +16,7 @@ export CXX=g++-12
 
 ## Install for development
 
-Use any Python version supported by the package (`>=3.9`) and activate a
-virtual environment, then run:
-
-```sh
-python -m pip install -e ".[dev]"
-python -m pytest
-```
-
-The editable install builds the CUDA extension and installs the test dependency.
-The build uses the CMake version declared in `pyproject.toml`. After native code
-or CMake changes, rebuild with:
-
-```sh
-python -m pip install --force-reinstall --no-deps -e .
-```
-
-If you use `uv`, the equivalent initial setup is:
+Install inside uv venv:
 
 ```sh
 uv sync --extra dev
